@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View,
   Text,
@@ -11,128 +11,572 @@ import {
   StatusBar,
   Platform,
   Alert,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { serviceCategories } from '../../constants/data';
+
+const { width, height } = Dimensions.get('window');
 
 const ServicesScreen = ({ navigation, route }) => {
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showSubCategories, setShowSubCategories] = useState(false);
   const [providers, setProviders] = useState([]);
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const searchScale = useRef(new Animated.Value(1)).current;
 
-  // Sample data for subcategories based on main category
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // Extended service categories
+  const extendedServiceCategories = [
+    ...serviceCategories,
+    {
+      id: 'rental_house',
+      name: 'Rental House',
+      icon: 'home',
+      color: '#9C27B0',
+      description: 'Find perfect rental properties for your needs',
+      providers: 45,
+      rating: 4.7,
+    }
+  ];
+
+  // Subcategories for all services
   const subCategoriesData = {
     'Electrician': [
-      { id: 'e1', name: 'Wiring & Installation', icon: 'bolt', count: 15 },
-      { id: 'e2', name: 'Repair & Maintenance', icon: 'build', count: 23 },
-      { id: 'e3', name: 'Emergency Service', icon: 'warning', count: 8 },
-      { id: 'e4', name: 'Appliance Repair', icon: 'electrical-services', count: 12 },
+      { id: 'e1', name: 'Wiring & Installation', icon: 'bolt', count: 15, color: '#FF9800' },
+      { id: 'e2', name: 'Repair & Maintenance', icon: 'build', count: 23, color: '#FF9800' },
+      { id: 'e3', name: 'Emergency Service', icon: 'warning', count: 8, color: '#FF9800' },
+      { id: 'e4', name: 'Appliance Repair', icon: 'electrical-services', count: 12, color: '#FF9800' },
     ],
     'Plumber': [
-      { id: 'p1', name: 'Pipe Repair', icon: 'plumbing', count: 18 },
-      { id: 'p2', name: 'Leakage Fix', icon: 'water-damage', count: 22 },
-      { id: 'p3', name: 'Installation', icon: 'install', count: 14 },
-      { id: 'p4', name: 'Drain Cleaning', icon: 'clean-hands', count: 10 },
+      { id: 'p1', name: 'Pipe Repair', icon: 'plumbing', count: 18, color: '#2196F3' },
+      { id: 'p2', name: 'Leakage Fix', icon: 'water-damage', count: 22, color: '#2196F3' },
+      { id: 'p3', name: 'Installation', icon: 'install', count: 14, color: '#2196F3' },
+      { id: 'p4', name: 'Drain Cleaning', icon: 'clean-hands', count: 10, color: '#2196F3' },
     ],
     'AC Repair': [
-      { id: 'ac1', name: 'AC Service', icon: 'ac-unit', count: 16 },
-      { id: 'ac2', name: 'Gas Refill', icon: 'propane', count: 12 },
-      { id: 'ac3', name: 'Installation', icon: 'install', count: 9 },
-      { id: 'ac4', name: 'Repair', icon: 'build', count: 20 },
+      { id: 'ac1', name: 'AC Service', icon: 'ac-unit', count: 16, color: '#00BCD4' },
+      { id: 'ac2', name: 'Gas Refill', icon: 'propane', count: 12, color: '#00BCD4' },
+      { id: 'ac3', name: 'Installation', icon: 'install', count: 9, color: '#00BCD4' },
+      { id: 'ac4', name: 'Repair', icon: 'build', count: 20, color: '#00BCD4' },
     ],
     'House Cleaning': [
-      { id: 'h1', name: 'Deep Cleaning', icon: 'cleaning-services', count: 25 },
-      { id: 'h2', name: 'Regular Cleaning', icon: 'cleaning', count: 30 },
-      { id: 'h3', name: 'Kitchen Cleaning', icon: 'kitchen', count: 18 },
-      { id: 'h4', name: 'Bathroom Cleaning', icon: 'bathroom', count: 15 },
+      { id: 'h1', name: 'Deep Cleaning', icon: 'cleaning-services', count: 25, color: '#4CAF50' },
+      { id: 'h2', name: 'Regular Cleaning', icon: 'cleaning', count: 30, color: '#4CAF50' },
+      { id: 'h3', name: 'Kitchen Cleaning', icon: 'kitchen', count: 18, color: '#4CAF50' },
+      { id: 'h4', name: 'Bathroom Cleaning', icon: 'bathroom', count: 15, color: '#4CAF50' },
     ],
     'Tutor': [
-      { id: 't1', name: 'Mathematics', icon: 'calculate', count: 12 },
-      { id: 't2', name: 'Science', icon: 'science', count: 10 },
-      { id: 't3', name: 'English', icon: 'language', count: 14 },
-      { id: 't4', name: 'Computer', icon: 'computer', count: 8 },
+      { id: 't1', name: 'Mathematics', icon: 'calculate', count: 12, color: '#9C27B0' },
+      { id: 't2', name: 'Science', icon: 'science', count: 10, color: '#9C27B0' },
+      { id: 't3', name: 'English', icon: 'language', count: 14, color: '#9C27B0' },
+      { id: 't4', name: 'Computer', icon: 'computer', count: 8, color: '#9C27B0' },
     ],
     'Delivery Helper': [
-      { id: 'd1', name: 'Parcel Delivery', icon: 'delivery-dining', count: 20 },
-      { id: 'd2', name: 'Food Delivery', icon: 'fastfood', count: 25 },
-      { id: 'd3', name: 'Grocery', icon: 'shopping-cart', count: 18 },
-      { id: 'd4', name: 'Document Pickup', icon: 'description', count: 12 },
+      { id: 'd1', name: 'Parcel Delivery', icon: 'delivery-dining', count: 20, color: '#FF5722' },
+      { id: 'd2', name: 'Food Delivery', icon: 'fastfood', count: 25, color: '#FF5722' },
+      { id: 'd3', name: 'Grocery', icon: 'shopping-cart', count: 18, color: '#FF5722' },
+      { id: 'd4', name: 'Document Pickup', icon: 'description', count: 12, color: '#FF5722' },
+    ],
+    'Carpenter': [
+      { id: 'c1', name: 'Furniture Making', icon: 'chair', count: 18, color: '#8D6E63' },
+      { id: 'c2', name: 'Cabinet Installation', icon: 'kitchen', count: 22, color: '#8D6E63' },
+      { id: 'c3', name: 'Door & Window Repair', icon: 'door-front', count: 15, color: '#8D6E63' },
+      { id: 'c4', name: 'Wood Polishing', icon: 'format-paint', count: 12, color: '#8D6E63' },
+      { id: 'c5', name: 'Custom Furniture', icon: 'design-services', count: 10, color: '#8D6E63' },
+    ],
+    'Painter': [
+      { id: 'pa1', name: 'Wall Painting', icon: 'wallpaper', count: 25, color: '#FF6B6B' },
+      { id: 'pa2', name: 'Texture Painting', icon: 'texture', count: 15, color: '#FF6B6B' },
+      { id: 'pa3', name: 'Waterproofing', icon: 'water', count: 12, color: '#FF6B6B' },
+      { id: 'pa4', name: 'Exterior Painting', icon: 'home', count: 18, color: '#FF6B6B' },
+      { id: 'pa5', name: 'Furniture Painting', icon: 'brush', count: 10, color: '#FF6B6B' },
+    ],
+    'Mechanic': [
+      { id: 'm1', name: 'Car Repair', icon: 'car-repair', count: 20, color: '#607D8B' },
+      { id: 'm2', name: 'Bike Repair', icon: 'motorcycle', count: 18, color: '#607D8B' },
+      { id: 'm3', name: 'Oil Change', icon: 'oil-barrel', count: 15, color: '#607D8B' },
+      { id: 'm4', name: 'Tire Service', icon: 'tire-repair', count: 12, color: '#607D8B' },
+      { id: 'm5', name: 'AC Repair (Auto)', icon: 'ac-unit', count: 10, color: '#607D8B' },
+    ],
+    'Beauty': [
+      { id: 'b1', name: 'Hair Styling', icon: 'cut', count: 30, color: '#E91E63' },
+      { id: 'b2', name: 'Makeup', icon: 'makeup', count: 25, color: '#E91E63' },
+      { id: 'b3', name: 'Facial & Skin Care', icon: 'face', count: 22, color: '#E91E63' },
+      { id: 'b4', name: 'Manicure/Pedicure', icon: 'spa', count: 18, color: '#E91E63' },
+      { id: 'b5', name: 'Bridal Makeup', icon: 'bride', count: 12, color: '#E91E63' },
+    ],
+    'Pest Control': [
+      { id: 'pc1', name: 'Cockroach Control', icon: 'bug-report', count: 20, color: '#795548' },
+      { id: 'pc2', name: 'Termite Control', icon: 'bug-report', count: 15, color: '#795548' },
+      { id: 'pc3', name: 'Mosquito Control', icon: 'mosquito', count: 18, color: '#795548' },
+      { id: 'pc4', name: 'Rodent Control', icon: 'mouse', count: 12, color: '#795548' },
+      { id: 'pc5', name: 'Bed Bug Treatment', icon: 'bed', count: 10, color: '#795548' },
+    ],
+    'Moving': [
+      { id: 'mv1', name: 'House Shifting', icon: 'home', count: 25, color: '#FF9800' },
+      { id: 'mv2', name: 'Office Shifting', icon: 'business', count: 15, color: '#FF9800' },
+      { id: 'mv3', name: 'Packing Services', icon: 'inventory', count: 20, color: '#FF9800' },
+      { id: 'mv4', name: 'Vehicle Transport', icon: 'local-shipping', count: 12, color: '#FF9800' },
+      { id: 'mv5', name: 'Storage Services', icon: 'storage', count: 10, color: '#FF9800' },
+    ],
+    'Rental House': [
+      { id: 'rh1', name: 'Residential Rent', icon: 'apartment', count: 28, color: '#9C27B0' },
+      { id: 'rh2', name: 'Commercial Rent', icon: 'business', count: 15, color: '#9C27B0' },
+      { id: 'rh3', name: 'PG & Hostels', icon: 'hotel', count: 32, color: '#9C27B0' },
+      { id: 'rh4', name: 'Vacation Rentals', icon: 'beach-access', count: 12, color: '#9C27B0' },
+      { id: 'rh5', name: 'Furnished Houses', icon: 'room', count: 18, color: '#9C27B0' },
+      { id: 'rh6', name: 'Shared Apartments', icon: 'people', count: 24, color: '#9C27B0' },
     ],
   };
 
-  // Sample providers data
-  const sampleProviders = [
-    {
-      id: '1',
-      name: 'Rajesh Kumar',
-      service: 'Electrician',
-      subService: 'Wiring & Installation',
-      experience: '5 years',
-      rating: 4.8,
-      reviews: 127,
-      price: '₹499/hr',
-      image: 'https://randomuser.me/api/portraits/men/1.jpg',
-      available: true,
-      distance: '1.2 km',
-      verified: true,
-    },
-    {
-      id: '2',
-      name: 'Priya Sharma',
-      service: 'Electrician',
-      subService: 'Repair & Maintenance',
-      experience: '3 years',
-      rating: 4.6,
-      reviews: 89,
-      price: '₹399/hr',
-      image: 'https://randomuser.me/api/portraits/women/1.jpg',
-      available: true,
-      distance: '2.5 km',
-      verified: true,
-    },
-    {
-      id: '3',
-      name: 'Suresh Patel',
-      service: 'Electrician',
-      subService: 'Emergency Service',
-      experience: '8 years',
-      rating: 4.9,
-      reviews: 256,
-      price: '₹599/hr',
-      image: 'https://randomuser.me/api/portraits/men/2.jpg',
-      available: true,
-      distance: '0.8 km',
-      verified: true,
-    },
-    {
-      id: '4',
-      name: 'Amit Verma',
-      service: 'Electrician',
-      subService: 'Appliance Repair',
-      experience: '4 years',
-      rating: 4.5,
-      reviews: 67,
-      price: '₹449/hr',
-      image: 'https://randomuser.me/api/portraits/men/3.jpg',
-      available: false,
-      distance: '3.1 km',
-      verified: false,
-    },
-  ];
+  // Enhanced sample providers data with 2 professionals for each category
+  const sampleProviders = {
+    'Electrician': [
+      {
+        id: 'e1',
+        name: 'Rajesh Kumar',
+        service: 'Electrician',
+        subService: 'Wiring & Installation',
+        experience: '5 years',
+        rating: 4.8,
+        reviews: 127,
+        price: '₹499/hr',
+        image: 'https://randomuser.me/api/portraits/men/1.jpg',
+        available: true,
+        distance: '1.2 km',
+        verified: true,
+      },
+      {
+        id: 'e2',
+        name: 'Priya Sharma',
+        service: 'Electrician',
+        subService: 'Repair & Maintenance',
+        experience: '3 years',
+        rating: 4.6,
+        reviews: 89,
+        price: '₹399/hr',
+        image: 'https://randomuser.me/api/portraits/women/1.jpg',
+        available: true,
+        distance: '2.5 km',
+        verified: true,
+      },
+    ],
+    'Plumber': [
+      {
+        id: 'p1',
+        name: 'Suresh Patel',
+        service: 'Plumber',
+        subService: 'Pipe Repair',
+        experience: '7 years',
+        rating: 4.9,
+        reviews: 234,
+        price: '₹450/hr',
+        image: 'https://randomuser.me/api/portraits/men/2.jpg',
+        available: true,
+        distance: '1.5 km',
+        verified: true,
+      },
+      {
+        id: 'p2',
+        name: 'Anita Verma',
+        service: 'Plumber',
+        subService: 'Leakage Fix',
+        experience: '4 years',
+        rating: 4.7,
+        reviews: 156,
+        price: '₹380/hr',
+        image: 'https://randomuser.me/api/portraits/women/2.jpg',
+        available: true,
+        distance: '2.1 km',
+        verified: true,
+      },
+    ],
+    'AC Repair': [
+      {
+        id: 'ac1',
+        name: 'Amit Sharma',
+        service: 'AC Repair',
+        subService: 'AC Service',
+        experience: '6 years',
+        rating: 4.8,
+        reviews: 189,
+        price: '₹550/hr',
+        image: 'https://randomuser.me/api/portraits/men/3.jpg',
+        available: true,
+        distance: '1.8 km',
+        verified: true,
+      },
+      {
+        id: 'ac2',
+        name: 'Neha Gupta',
+        service: 'AC Repair',
+        subService: 'Gas Refill',
+        experience: '3 years',
+        rating: 4.5,
+        reviews: 67,
+        price: '₹420/hr',
+        image: 'https://randomuser.me/api/portraits/women/3.jpg',
+        available: true,
+        distance: '2.3 km',
+        verified: true,
+      },
+    ],
+    'House Cleaning': [
+      {
+        id: 'hc1',
+        name: 'Meera Singh',
+        service: 'House Cleaning',
+        subService: 'Deep Cleaning',
+        experience: '5 years',
+        rating: 4.9,
+        reviews: 278,
+        price: '₹350/hr',
+        image: 'https://randomuser.me/api/portraits/women/4.jpg',
+        available: true,
+        distance: '1.2 km',
+        verified: true,
+      },
+      {
+        id: 'hc2',
+        name: 'Raj Malhotra',
+        service: 'House Cleaning',
+        subService: 'Regular Cleaning',
+        experience: '4 years',
+        rating: 4.6,
+        reviews: 145,
+        price: '₹280/hr',
+        image: 'https://randomuser.me/api/portraits/men/4.jpg',
+        available: true,
+        distance: '2.8 km',
+        verified: true,
+      },
+    ],
+    'Tutor': [
+      {
+        id: 't1',
+        name: 'Dr. Kavita Reddy',
+        service: 'Tutor',
+        subService: 'Mathematics',
+        experience: '10 years',
+        rating: 4.9,
+        reviews: 456,
+        price: '₹800/hr',
+        image: 'https://randomuser.me/api/portraits/women/5.jpg',
+        available: true,
+        distance: '1.5 km',
+        verified: true,
+      },
+      {
+        id: 't2',
+        name: 'Prof. Ramesh Iyer',
+        service: 'Tutor',
+        subService: 'Science',
+        experience: '8 years',
+        rating: 4.8,
+        reviews: 324,
+        price: '₹700/hr',
+        image: 'https://randomuser.me/api/portraits/men/5.jpg',
+        available: true,
+        distance: '2.2 km',
+        verified: true,
+      },
+    ],
+    'Delivery Helper': [
+      {
+        id: 'd1',
+        name: 'Vikram Singh',
+        service: 'Delivery Helper',
+        subService: 'Parcel Delivery',
+        experience: '3 years',
+        rating: 4.7,
+        reviews: 98,
+        price: '₹200/hr',
+        image: 'https://randomuser.me/api/portraits/men/6.jpg',
+        available: true,
+        distance: '1.0 km',
+        verified: true,
+      },
+      {
+        id: 'd2',
+        name: 'Sunita Devi',
+        service: 'Delivery Helper',
+        subService: 'Food Delivery',
+        experience: '2 years',
+        rating: 4.5,
+        reviews: 76,
+        price: '₹180/hr',
+        image: 'https://randomuser.me/api/portraits/women/6.jpg',
+        available: true,
+        distance: '1.7 km',
+        verified: true,
+      },
+    ],
+    'Carpenter': [
+      {
+        id: 'c1',
+        name: 'Rakesh Yadav',
+        service: 'Carpenter',
+        subService: 'Furniture Making',
+        experience: '8 years',
+        rating: 4.9,
+        reviews: 234,
+        price: '₹450/hr',
+        image: 'https://randomuser.me/api/portraits/men/7.jpg',
+        available: true,
+        distance: '1.5 km',
+        verified: true,
+      },
+      {
+        id: 'c2',
+        name: 'Mohan Kumar',
+        service: 'Carpenter',
+        subService: 'Cabinet Installation',
+        experience: '6 years',
+        rating: 4.7,
+        reviews: 156,
+        price: '₹400/hr',
+        image: 'https://randomuser.me/api/portraits/men/8.jpg',
+        available: true,
+        distance: '2.1 km',
+        verified: true,
+      },
+    ],
+    'Painter': [
+      {
+        id: 'pa1',
+        name: 'Vikram Singh',
+        service: 'Painter',
+        subService: 'Wall Painting',
+        experience: '7 years',
+        rating: 4.8,
+        reviews: 189,
+        price: '₹350/hr',
+        image: 'https://randomuser.me/api/portraits/men/9.jpg',
+        available: true,
+        distance: '1.8 km',
+        verified: true,
+      },
+      {
+        id: 'pa2',
+        name: 'Arun Sharma',
+        service: 'Painter',
+        subService: 'Texture Painting',
+        experience: '5 years',
+        rating: 4.6,
+        reviews: 123,
+        price: '₹420/hr',
+        image: 'https://randomuser.me/api/portraits/men/10.jpg',
+        available: true,
+        distance: '2.3 km',
+        verified: true,
+      },
+    ],
+    'Mechanic': [
+      {
+        id: 'm1',
+        name: 'Ravi Verma',
+        service: 'Mechanic',
+        subService: 'Car Repair',
+        experience: '10 years',
+        rating: 4.9,
+        reviews: 342,
+        price: '₹600/hr',
+        image: 'https://randomuser.me/api/portraits/men/11.jpg',
+        available: true,
+        distance: '2.3 km',
+        verified: true,
+      },
+      {
+        id: 'm2',
+        name: 'Sanjay Mehta',
+        service: 'Mechanic',
+        subService: 'Bike Repair',
+        experience: '6 years',
+        rating: 4.7,
+        reviews: 198,
+        price: '₹350/hr',
+        image: 'https://randomuser.me/api/portraits/men/12.jpg',
+        available: true,
+        distance: '1.8 km',
+        verified: true,
+      },
+    ],
+    'Beauty': [
+      {
+        id: 'b1',
+        name: 'Neha Sharma',
+        service: 'Beauty',
+        subService: 'Hair Styling',
+        experience: '5 years',
+        rating: 4.8,
+        reviews: 267,
+        price: '₹500/hr',
+        image: 'https://randomuser.me/api/portraits/women/7.jpg',
+        available: true,
+        distance: '1.2 km',
+        verified: true,
+      },
+      {
+        id: 'b2',
+        name: 'Priyanka Kapoor',
+        service: 'Beauty',
+        subService: 'Makeup',
+        experience: '4 years',
+        rating: 4.9,
+        reviews: 312,
+        price: '₹600/hr',
+        image: 'https://randomuser.me/api/portraits/women/8.jpg',
+        available: true,
+        distance: '2.0 km',
+        verified: true,
+      },
+    ],
+    'Pest Control': [
+      {
+        id: 'pc1',
+        name: 'Amit Pest Solutions',
+        service: 'Pest Control',
+        subService: 'Cockroach Control',
+        experience: '6 years',
+        rating: 4.7,
+        reviews: 145,
+        price: '₹800/session',
+        image: 'https://randomuser.me/api/portraits/men/13.jpg',
+        available: true,
+        distance: '3.1 km',
+        verified: true,
+      },
+      {
+        id: 'pc2',
+        name: 'Green Pest Control',
+        service: 'Pest Control',
+        subService: 'Termite Control',
+        experience: '5 years',
+        rating: 4.6,
+        reviews: 98,
+        price: '₹1000/session',
+        image: 'https://randomuser.me/api/portraits/men/14.jpg',
+        available: true,
+        distance: '2.5 km',
+        verified: true,
+      },
+    ],
+    'Moving': [
+      {
+        id: 'mv1',
+        name: 'SafeMove Packers',
+        service: 'Moving',
+        subService: 'House Shifting',
+        experience: '8 years',
+        rating: 4.8,
+        reviews: 289,
+        price: '₹2000/truck',
+        image: 'https://randomuser.me/api/portraits/men/15.jpg',
+        available: true,
+        distance: '2.5 km',
+        verified: true,
+      },
+      {
+        id: 'mv2',
+        name: 'Reliable Movers',
+        service: 'Moving',
+        subService: 'Office Shifting',
+        experience: '6 years',
+        rating: 4.7,
+        reviews: 156,
+        price: '₹2500/truck',
+        image: 'https://randomuser.me/api/portraits/men/16.jpg',
+        available: true,
+        distance: '3.0 km',
+        verified: true,
+      },
+    ],
+    'Rental House': [
+      {
+        id: 'rh1',
+        name: 'Sunset Villa',
+        type: 'Residential Rent',
+        subService: '3 BHK Furnished House',
+        bedrooms: 3,
+        bathrooms: 2,
+        area: '1500 sq.ft',
+        rating: 4.9,
+        reviews: 45,
+        price: '₹25,000/month',
+        image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400',
+        available: true,
+        location: 'Indiranagar',
+        distance: '1.5 km',
+        verified: true,
+        amenities: ['Parking', 'Garden', 'Security'],
+      },
+      {
+        id: 'rh2',
+        name: 'Green Valley Apartment',
+        type: 'Residential Rent',
+        subService: '2 BHK Semi-Furnished',
+        bedrooms: 2,
+        bathrooms: 2,
+        area: '1100 sq.ft',
+        rating: 4.7,
+        reviews: 32,
+        price: '₹18,000/month',
+        image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=400',
+        available: true,
+        location: 'Koramangala',
+        distance: '2.3 km',
+        verified: true,
+        amenities: ['Gym', 'Swimming Pool', 'Parking'],
+      },
+    ],
+  };
 
   useEffect(() => {
-    // Check if a category was passed from home screen
     if (route.params?.category) {
       handleCategorySelect(route.params.category);
     }
   }, [route.params?.category]);
 
+  const animateSearch = () => {
+    Animated.sequence([
+      Animated.timing(searchScale, {
+        toValue: 1.05,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(searchScale, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   const handleCategorySelect = (category) => {
     setSelectedCategory(category);
     setShowSubCategories(true);
-    // Load providers for this category
-    setProviders(sampleProviders.filter(p => p.service === category.name));
+    setProviders(sampleProviders[category.name] || []);
   };
 
   const handleBackToCategories = () => {
@@ -142,54 +586,67 @@ const ServicesScreen = ({ navigation, route }) => {
   };
 
   const handleSubCategorySelect = (subCategory) => {
-    // Navigate to provider list with selected category and subcategory
-    navigation.navigate('ProviderList', { 
-      category: selectedCategory,
-      subCategory: subCategory,
-    });
+    if (selectedCategory?.name === 'Rental House') {
+      navigation.navigate('RentalProperties', { 
+        category: selectedCategory,
+        subCategory: subCategory,
+      });
+    } else {
+      navigation.navigate('ProviderList', { 
+        category: selectedCategory,
+        subCategory: subCategory,
+      });
+    }
   };
 
   const handleViewAllProviders = () => {
-    navigation.navigate('ProviderList', { 
-      category: selectedCategory,
+    if (selectedCategory?.name === 'Rental House') {
+      navigation.navigate('RentalProperties', { category: selectedCategory });
+    } else {
+      navigation.navigate('ProviderList', { category: selectedCategory });
+    }
+  };
+
+  const renderCategoryItem = ({ item, index }) => {
+    const inputRange = [-1, 0, index * 100, (index + 1) * 100];
+    const translateY = fadeAnim.interpolate({
+      inputRange,
+      outputRange: [50, 0, 0, 0],
     });
-  };
 
-  const handleProviderPress = (provider) => {
-    navigation.navigate('ProviderDetails', { providerId: provider.id });
-  };
-
-  const handleBookNow = (provider) => {
-    navigation.navigate('Booking', { provider: provider });
-  };
-
-  const renderCategoryItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.serviceCard}
-      onPress={() => handleCategorySelect(item)}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.serviceIcon, { backgroundColor: item.color + '15' }]}>
-        <Icon name={item.icon} size={32} color={item.color} />
-      </View>
-      <View style={styles.serviceInfo}>
-        <Text style={styles.serviceName}>{item.name}</Text>
-        <Text style={styles.serviceDesc}>
-          {item.description || 'Professional local services at your doorstep'}
-        </Text>
-        <View style={styles.serviceMeta}>
-          <Text style={styles.serviceCount}>
-            {item.providers || Math.floor(Math.random() * 50) + 20}+ providers
-          </Text>
-          <View style={styles.ratingBadge}>
-            <Icon name="star" size={14} color="#FFD700" />
-            <Text style={styles.ratingText}>{item.rating || '4.5'}</Text>
+    return (
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        <TouchableOpacity 
+          style={styles.serviceCard}
+          onPress={() => handleCategorySelect(item)}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.serviceIcon, { backgroundColor: item.color + '10' }]}>
+            <Icon name={item.icon} size={32} color={item.color} />
           </View>
-        </View>
-      </View>
-      <Icon name="chevron-right" size={24} color="#ccc" />
-    </TouchableOpacity>
-  );
+          <View style={styles.serviceInfo}>
+            <Text style={styles.serviceName}>{item.name}</Text>
+            <Text style={styles.serviceDesc} numberOfLines={1}>
+              {item.description || 'Professional services at your doorstep'}
+            </Text>
+            <View style={styles.serviceMeta}>
+              <View style={styles.serviceCountBadge}>
+                <Icon name="people" size={12} color={item.color} />
+                <Text style={[styles.serviceCount, { color: item.color }]}>
+                  {item.providers || Math.floor(Math.random() * 50) + 20}+ providers
+                </Text>
+              </View>
+              <View style={styles.ratingBadge}>
+                <Icon name="star" size={12} color="#FFD700" />
+                <Text style={styles.ratingText}>{item.rating || '4.5'}</Text>
+              </View>
+            </View>
+          </View>
+          <Icon name="chevron-right" size={24} color="#ccc" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   const renderSubCategoryItem = ({ item }) => (
     <TouchableOpacity 
@@ -197,12 +654,12 @@ const ServicesScreen = ({ navigation, route }) => {
       onPress={() => handleSubCategorySelect(item)}
       activeOpacity={0.7}
     >
-      <View style={[styles.subCategoryIcon, { backgroundColor: selectedCategory?.color + '15' }]}>
-        <Icon name={item.icon} size={24} color={selectedCategory?.color} />
+      <View style={[styles.subCategoryIcon, { backgroundColor: item.color + '15' }]}>
+        <Icon name={item.icon} size={24} color={item.color} />
       </View>
       <View style={styles.subCategoryInfo}>
         <Text style={styles.subCategoryName}>{item.name}</Text>
-        <Text style={styles.subCategoryCount}>{item.count} providers available</Text>
+        <Text style={styles.subCategoryCount}>{item.count} professionals available</Text>
       </View>
       <Icon name="chevron-right" size={20} color="#ccc" />
     </TouchableOpacity>
@@ -210,40 +667,61 @@ const ServicesScreen = ({ navigation, route }) => {
 
   const renderProviderItem = ({ item }) => (
     <TouchableOpacity 
-      style={styles.providerCard}
-      onPress={() => handleProviderPress(item)}
-      activeOpacity={0.7}
+      style={[styles.providerCard, selectedCategory?.name === 'Rental House' && styles.rentalCard]}
+      onPress={() => navigation.navigate('ProviderDetails', { providerId: item.id })}
+      activeOpacity={0.8}
     >
       <Image source={{ uri: item.image }} style={styles.providerImage} />
       <View style={styles.providerInfo}>
         <View style={styles.providerHeader}>
           <Text style={styles.providerName}>{item.name}</Text>
           {item.verified && (
-            <Icon name="verified" size={16} color="#007AFF" />
+            <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
           )}
         </View>
         
         <Text style={styles.providerService}>{item.subService}</Text>
         
-        <View style={styles.providerDetails}>
-          <View style={styles.ratingContainer}>
-            <Icon name="star" size={14} color="#FFD700" />
-            <Text style={styles.ratingValue}>{item.rating}</Text>
-            <Text style={styles.reviewCount}>({item.reviews})</Text>
+        {selectedCategory?.name === 'Rental House' ? (
+          <>
+            <View style={styles.rentalDetails}>
+              <View style={styles.detailChip}>
+                <Icon name="king-bed" size={12} color="#666" />
+                <Text style={styles.detailText}>{item.bedrooms} BHK</Text>
+              </View>
+              <View style={styles.detailChip}>
+                <Icon name="bathtub" size={12} color="#666" />
+                <Text style={styles.detailText}>{item.bathrooms} Bath</Text>
+              </View>
+            </View>
+            
+            <View style={styles.amenitiesContainer}>
+              {item.amenities?.slice(0, 2).map((amenity, index) => (
+                <View key={index} style={styles.amenityChip}>
+                  <Text style={styles.amenityText}>{amenity}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        ) : (
+          <View style={styles.providerDetails}>
+            <View style={styles.ratingContainer}>
+              <Icon name="star" size={14} color="#FFD700" />
+              <Text style={styles.ratingValue}>{item.rating}</Text>
+              <Text style={styles.reviewCount}>({item.reviews})</Text>
+            </View>
+            <View style={styles.experienceContainer}>
+              <Icon name="work" size={12} color="#666" />
+              <Text style={styles.experienceText}>{item.experience}</Text>
+            </View>
           </View>
-          
-          <View style={styles.experienceContainer}>
-            <Icon name="work" size={14} color="#666" />
-            <Text style={styles.experienceText}>{item.experience}</Text>
-          </View>
-        </View>
+        )}
 
         <View style={styles.providerFooter}>
           <View style={styles.distanceContainer}>
-            <Icon name="location-on" size={14} color="#666" />
-            <Text style={styles.distanceText}>{item.distance}</Text>
+            <Icon name="location-on" size={12} color="#666" />
+            <Text style={styles.distanceText}>{item.location || item.distance}</Text>
           </View>
-          
           <View style={styles.priceContainer}>
             <Text style={styles.priceText}>{item.price}</Text>
           </View>
@@ -255,18 +733,26 @@ const ServicesScreen = ({ navigation, route }) => {
           disabled={!item.available}
         >
           <Text style={styles.bookButtonText}>
-            {item.available ? 'Book Now' : 'Currently Unavailable'}
+            {selectedCategory?.name === 'Rental House' ? 'View Details' : 'Book Now'}
           </Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 
+  const handleBookNow = (provider) => {
+    if (selectedCategory?.name === 'Rental House') {
+      navigation.navigate('RentalDetails', { property: provider });
+    } else {
+      navigation.navigate('Booking', { provider: provider });
+    }
+  };
+
   const filteredCategories = searchText
-    ? serviceCategories.filter(cat => 
+    ? extendedServiceCategories.filter(cat => 
         cat.name.toLowerCase().includes(searchText.toLowerCase())
       )
-    : serviceCategories;
+    : extendedServiceCategories;
 
   const filteredProviders = searchText
     ? providers.filter(p => 
@@ -284,52 +770,62 @@ const ServicesScreen = ({ navigation, route }) => {
       />
       
       <View style={styles.container}>
-        {/* Header with Back Button */}
+        {/* Header */}
         <View style={styles.header}>
           {showSubCategories ? (
             <TouchableOpacity 
               style={styles.backButton}
               onPress={handleBackToCategories}
             >
-              <Icon name="arrow-back" size={24} color="#333" />
+              <Ionicons name="arrow-back" size={24} color="#333" />
             </TouchableOpacity>
           ) : null}
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>
-              {showSubCategories ? selectedCategory?.name : 'Services'}
+              {showSubCategories ? selectedCategory?.name : 'Explore Services'}
             </Text>
             <Text style={styles.headerSubtitle}>
               {showSubCategories 
                 ? 'Choose a specific service type'
-                : 'Find the perfect service for your needs'
+                : 'Find trusted professionals near you'
               }
             </Text>
           </View>
+          {!showSubCategories && (
+            <TouchableOpacity style={styles.filterButton}>
+              <Ionicons name="options-outline" size={22} color="#FF6B6B" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Search Bar */}
-        <View style={styles.searchBox}>
-          <Icon name="search" size={22} color="#999" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={showSubCategories ? "Search in this category..." : "Search services..."}
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-          {searchText ? (
-            <TouchableOpacity onPress={() => setSearchText('')}>
-              <Icon name="close" size={20} color="#999" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        <Animated.View style={[styles.searchWrapper, { transform: [{ scale: searchScale }] }]}>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search-outline" size={22} color="#FF6B6B" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={showSubCategories ? "Search in this category..." : "Search services..."}
+              placeholderTextColor="#999"
+              value={searchText}
+              onChangeText={setSearchText}
+              onFocus={animateSearch}
+            />
+            {searchText ? (
+              <TouchableOpacity onPress={() => setSearchText('')}>
+                <Ionicons name="close-circle" size={20} color="#FF6B6B" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </Animated.View>
 
-        {/* Content based on selection */}
-        <ScrollView 
+        {/* Content */}
+        <Animated.ScrollView 
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          style={{ opacity: fadeAnim }}
         >
           {!showSubCategories ? (
-            // Show all service categories
+            // Categories Grid
             <View style={styles.categoriesContainer}>
               <FlatList
                 data={filteredCategories}
@@ -340,7 +836,7 @@ const ServicesScreen = ({ navigation, route }) => {
               />
             </View>
           ) : (
-            // Show subcategories and providers
+            // Subcategories and Providers
             <View>
               {/* Subcategories Section */}
               <View style={styles.section}>
@@ -354,53 +850,55 @@ const ServicesScreen = ({ navigation, route }) => {
                 />
               </View>
 
-              {/* Featured Providers Section */}
+              {/* Featured Section - Now showing 2 professionals */}
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Featured Providers</Text>
+                  <Text style={styles.sectionTitle}>
+                    {selectedCategory?.name === 'Rental House' ? 'Featured Properties' : 'Top Professionals'}
+                  </Text>
                   <TouchableOpacity onPress={handleViewAllProviders}>
                     <Text style={styles.viewAllText}>View All</Text>
                   </TouchableOpacity>
                 </View>
 
                 {filteredProviders.length > 0 ? (
-                  <FlatList
-                    data={filteredProviders.slice(0, 3)}
-                    renderItem={renderProviderItem}
-                    keyExtractor={(item) => item.id}
-                    scrollEnabled={false}
-                    contentContainerStyle={styles.providersList}
-                  />
+                  <View style={styles.providersGrid}>
+                    {filteredProviders.slice(0, 2).map((item) => (
+                      <View key={item.id} style={styles.providerGridItem}>
+                        {renderProviderItem({ item })}
+                      </View>
+                    ))}
+                  </View>
                 ) : (
                   <View style={styles.emptyState}>
-                    <Icon name="error-outline" size={48} color="#ccc" />
-                    <Text style={styles.emptyStateText}>No providers found</Text>
-                    <Text style={styles.emptyStateSubText}>Try adjusting your search</Text>
+                    <Ionicons name="search-outline" size={48} color="#ccc" />
+                    <Text style={styles.emptyStateText}>No results found</Text>
+                    <Text style={styles.emptyStateSubText}>Try different keywords</Text>
                   </View>
                 )}
               </View>
 
-              {/* Quick Stats Section */}
-              <View style={styles.statsSection}>
-                <View style={styles.statCard}>
-                  <Icon name="people" size={24} color="#007AFF" />
-                  <Text style={styles.statNumber}>50+</Text>
-                  <Text style={styles.statLabel}>Active Providers</Text>
+              {/* Stats Section */}
+              <View style={styles.statsContainer}>
+                <View style={styles.statsCard}>
+                  <Ionicons name="people" size={24} color="#FF6B6B" />
+                  <Text style={styles.statsNumber}>50+</Text>
+                  <Text style={styles.statsLabel}>Active Providers</Text>
                 </View>
-                <View style={styles.statCard}>
-                  <Icon name="verified" size={24} color="#007AFF" />
-                  <Text style={styles.statNumber}>100%</Text>
-                  <Text style={styles.statLabel}>Verified</Text>
+                <View style={styles.statsCard}>
+                  <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                  <Text style={styles.statsNumber}>100%</Text>
+                  <Text style={styles.statsLabel}>Verified</Text>
                 </View>
-                <View style={styles.statCard}>
-                  <Icon name="support-agent" size={24} color="#007AFF" />
-                  <Text style={styles.statNumber}>24/7</Text>
-                  <Text style={styles.statLabel}>Support</Text>
+                <View style={styles.statsCard}>
+                  <Ionicons name="time" size={24} color="#FF9800" />
+                  <Text style={styles.statsNumber}>24/7</Text>
+                  <Text style={styles.statsLabel}>Support</Text>
                 </View>
               </View>
             </View>
           )}
-        </ScrollView>
+        </Animated.ScrollView>
       </View>
     </>
   );
@@ -409,59 +907,82 @@ const ServicesScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#f8f9fa' 
+    backgroundColor: '#F8F9FA' 
   },
   header: { 
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff', 
-    padding: 20, 
-    paddingBottom: 15,
+    paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 45 : 50,
+    paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
     marginRight: 15,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTextContainer: {
     flex: 1,
   },
   headerTitle: { 
-    fontSize: 24, 
-    fontWeight: '700', 
-    color: '#1a1a1a' 
+    fontSize: 28, 
+    fontWeight: '800', 
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
   },
   headerSubtitle: { 
     fontSize: 14, 
     color: '#666', 
-    marginTop: 4 
+    marginTop: 4,
+    fontWeight: '400',
   },
-  searchBox: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#fff', 
-    margin: 15, 
-    paddingHorizontal: 15,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 0,
-    borderRadius: 12, 
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  filterButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  searchInput: { 
-    flex: 1, 
-    marginLeft: 10, 
-    fontSize: 16,
+  searchWrapper: {
+    paddingHorizontal: 20,
+    marginTop: 15,
+    marginBottom: 20,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
     paddingVertical: 12,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#FFE0E0',
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 15,
+    color: '#333',
+    paddingVertical: Platform.OS === 'ios' ? 8 : 0,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: 30,
   },
   categoriesContainer: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
   },
   list: { 
     paddingBottom: 10,
@@ -471,13 +992,13 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     backgroundColor: '#fff', 
     padding: 16, 
-    borderRadius: 16, 
+    borderRadius: 20, 
     marginBottom: 12, 
-    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   serviceIcon: { 
     width: 60, 
@@ -492,59 +1013,62 @@ const styles = StyleSheet.create({
   },
   serviceName: { 
     fontSize: 16, 
-    fontWeight: '600', 
+    fontWeight: '700', 
     color: '#1a1a1a',
     marginBottom: 4,
   },
   serviceDesc: { 
-    fontSize: 13, 
+    fontSize: 12, 
     color: '#666', 
-    marginBottom: 6,
+    marginBottom: 8,
   },
   serviceMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  serviceCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   serviceCount: { 
-    fontSize: 12, 
-    color: '#007AFF', 
-    fontWeight: '500' 
+    fontSize: 11, 
+    fontWeight: '500',
+    marginLeft: 4,
   },
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFF5F5',
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 4,
     borderRadius: 12,
   },
   ratingText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#333',
-    marginLeft: 2,
+    color: '#FF6B6B',
+    marginLeft: 4,
   },
   section: {
-    paddingHorizontal: 15,
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    marginBottom: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
   },
   viewAllText: {
-    color: '#007AFF',
+    color: '#FF6B6B',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   subCategoryList: {
     paddingBottom: 5,
@@ -553,51 +1077,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 1,
   },
   subCategoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
   subCategoryInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 14,
   },
   subCategoryName: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#333',
   },
   subCategoryCount: {
     fontSize: 12,
-    color: '#666',
+    color: '#999',
     marginTop: 2,
   },
-  providersList: {
-    paddingBottom: 10,
+  providersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  providerGridItem: {
+    width: '48%',
   },
   providerCard: {
-    flexDirection: 'row',
     backgroundColor: '#fff',
     padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   },
+  rentalCard: {
+    backgroundColor: '#fff',
+  },
   providerImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: '100%',
+    height: 100,
+    borderRadius: 12,
+    marginBottom: 10,
   },
   providerInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   providerHeader: {
     flexDirection: 'row',
@@ -606,20 +1145,20 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   providerName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#333',
     flex: 1,
   },
   providerService: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 6,
+    fontSize: 11,
+    color: '#999',
+    marginBottom: 8,
   },
   providerDetails: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -627,13 +1166,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   ratingValue: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#333',
     marginLeft: 2,
   },
   reviewCount: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#999',
     marginLeft: 2,
   },
@@ -642,76 +1181,117 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   experienceText: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#666',
     marginLeft: 2,
+  },
+  rentalDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
+  detailChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  detailText: {
+    fontSize: 9,
+    color: '#666',
+    marginLeft: 3,
+  },
+  amenitiesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
+  amenityChip: {
+    backgroundColor: '#FFF5F5',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginRight: 4,
+    marginBottom: 4,
+  },
+  amenityText: {
+    fontSize: 9,
+    color: '#FF6B6B',
   },
   providerFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   distanceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   distanceText: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#666',
-    marginLeft: 2,
+    marginLeft: 3,
   },
   priceContainer: {
-    backgroundColor: '#e8f2ff',
+    backgroundColor: '#FFF5F5',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   priceText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FF6B6B',
   },
   bookButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignItems: 'center',
   },
   bookButtonDisabled: {
     backgroundColor: '#ccc',
   },
   bookButtonText: {
     color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
-  statsSection: {
+  statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 15,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     marginTop: 10,
-    marginBottom: 20,
+    marginBottom: 30,
   },
-  statCard: {
+  statsCard: {
+    flex: 1,
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    flex: 0.3,
+    padding: 12,
+    borderRadius: 16,
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
   },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: '700',
+  statsNumber: {
+    fontSize: 16,
+    fontWeight: '800',
     color: '#333',
-    marginTop: 8,
+    marginTop: 6,
   },
-  statLabel: {
-    fontSize: 11,
-    color: '#666',
-    marginTop: 4,
+  statsLabel: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 2,
   },
   emptyState: {
     alignItems: 'center',
@@ -721,13 +1301,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#999',
-    marginTop: 10,
+    marginTop: 12,
   },
   emptyStateSubText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#ccc',
     marginTop: 4,
   },
 });
 
-export default ServicesScreen; 
+export default ServicesScreen;
