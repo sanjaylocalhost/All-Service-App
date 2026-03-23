@@ -1,9 +1,9 @@
 import { Platform } from 'react-native';
 
 export const API_BASE_URL = Platform.select({
-  android: 'http://172.28.200.64:4000/api',  // Use your computer's IP
-  ios: 'http://localhost:4000/api',           // iOS simulator
-  default: 'http://localhost:4000/api',       // Fallback
+  android: 'https://all-service-backend-2.onrender.com/api',  // Use your computer's IP
+  ios: 'https://all-service-backend-2.onrender.com/api',           // iOS simulator
+  default: 'https://all-service-backend-2.onrender.com/api',       // Fallback
 });
 
 
