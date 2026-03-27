@@ -18,6 +18,8 @@
     "@reduxjs/toolkit": "^1.9.5",
     "axios": "^1.4.0",
     "expo": "^54.0.6",
+    "expo-device": "~8.0.10",
+    "expo-location": "~19.0.8",
     "expo-router": "~6.0.23",
     "expo-splash-screen": "~31.0.13",
     "react": "19.1.0",
