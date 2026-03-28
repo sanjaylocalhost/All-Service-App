@@ -6,7 +6,7 @@ export const API_BASE_URL = Platform.select({
   default: 'https://all-service-backend-2.onrender.com/api',       // Fallback
 });
 
-
+// export const API_BASE_URL = 'http://localhost:3000/api';
 export const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
 
 export const RAZORPAY_KEY = 'YOUR_RAZORPAY_KEY';

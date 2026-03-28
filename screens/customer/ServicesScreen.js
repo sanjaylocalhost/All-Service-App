@@ -13,6 +13,8 @@ import {
   Alert,
   Animated,
   Dimensions,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -25,30 +27,30 @@ const ServicesScreen = ({ navigation, route }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showSubCategories, setShowSubCategories] = useState(false);
   const [providers, setProviders] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
+  const [comingSoonCategory, setComingSoonCategory] = useState(null);
   
-  // Animation values
+  const [filters, setFilters] = useState({
+    minRating: 0,
+    maxPrice: '',
+    minPrice: '',
+    distance: 'any',
+    availableNow: false,
+    verifiedOnly: false,
+    minExperience: 'any',
+    sortBy: 'rating',
+  });
+
+  // Animation values - ONLY ONCE!
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const searchScale = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
   // Extended service categories
   const extendedServiceCategories = [
-    ...serviceCategories,
+    ...serviceCategories.map(cat => ({ ...cat, isAvailable: true, availableSubCategories: true })),
     {
       id: 'rental_house',
       name: 'Rental House',
@@ -57,10 +59,60 @@ const ServicesScreen = ({ navigation, route }) => {
       description: 'Find perfect rental properties for your needs',
       providers: 45,
       rating: 4.7,
-    }
+      isAvailable: true,
+      availableSubCategories: true,
+    },
+    {
+      id: 'car_wash',
+      name: 'Car Wash',
+      icon: 'local-car-wash',
+      color: '#00BCD4',
+      description: 'Professional car cleaning and detailing',
+      providers: 0,
+      rating: 0,
+      isAvailable: false,
+      availableSubCategories: false,
+      comingSoon: true,
+    },
+    {
+      id: 'appliance_repair',
+      name: 'Appliance Repair',
+      icon: 'electrical-services',
+      color: '#FF9800',
+      description: 'Repair all home appliances',
+      providers: 0,
+      rating: 0,
+      isAvailable: false,
+      availableSubCategories: false,
+      comingSoon: true,
+    },
+    {
+      id: 'gardening',
+      name: 'Gardening',
+      icon: 'grass',
+      color: '#4CAF50',
+      description: 'Garden maintenance and landscaping',
+      providers: 0,
+      rating: 0,
+      isAvailable: false,
+      availableSubCategories: false,
+      comingSoon: true,
+    },
+    {
+      id: 'pet_care',
+      name: 'Pet Care',
+      icon: 'pets',
+      color: '#E91E63',
+      description: 'Pet grooming and care services',
+      providers: 0,
+      rating: 0,
+      isAvailable: false,
+      availableSubCategories: false,
+      comingSoon: true,
+    },
   ];
 
-  // Subcategories for all services
+  // Subcategories data
   const subCategoriesData = {
     'Electrician': [
       { id: 'e1', name: 'Wiring & Installation', icon: 'bolt', count: 15, color: '#FF9800' },
@@ -103,42 +155,36 @@ const ServicesScreen = ({ navigation, route }) => {
       { id: 'c2', name: 'Cabinet Installation', icon: 'kitchen', count: 22, color: '#8D6E63' },
       { id: 'c3', name: 'Door & Window Repair', icon: 'door-front', count: 15, color: '#8D6E63' },
       { id: 'c4', name: 'Wood Polishing', icon: 'format-paint', count: 12, color: '#8D6E63' },
-      { id: 'c5', name: 'Custom Furniture', icon: 'design-services', count: 10, color: '#8D6E63' },
     ],
     'Painter': [
       { id: 'pa1', name: 'Wall Painting', icon: 'wallpaper', count: 25, color: '#FF6B6B' },
       { id: 'pa2', name: 'Texture Painting', icon: 'texture', count: 15, color: '#FF6B6B' },
       { id: 'pa3', name: 'Waterproofing', icon: 'water', count: 12, color: '#FF6B6B' },
       { id: 'pa4', name: 'Exterior Painting', icon: 'home', count: 18, color: '#FF6B6B' },
-      { id: 'pa5', name: 'Furniture Painting', icon: 'brush', count: 10, color: '#FF6B6B' },
     ],
     'Mechanic': [
       { id: 'm1', name: 'Car Repair', icon: 'car-repair', count: 20, color: '#607D8B' },
       { id: 'm2', name: 'Bike Repair', icon: 'motorcycle', count: 18, color: '#607D8B' },
       { id: 'm3', name: 'Oil Change', icon: 'oil-barrel', count: 15, color: '#607D8B' },
       { id: 'm4', name: 'Tire Service', icon: 'tire-repair', count: 12, color: '#607D8B' },
-      { id: 'm5', name: 'AC Repair (Auto)', icon: 'ac-unit', count: 10, color: '#607D8B' },
     ],
     'Beauty': [
       { id: 'b1', name: 'Hair Styling', icon: 'cut', count: 30, color: '#E91E63' },
       { id: 'b2', name: 'Makeup', icon: 'makeup', count: 25, color: '#E91E63' },
       { id: 'b3', name: 'Facial & Skin Care', icon: 'face', count: 22, color: '#E91E63' },
       { id: 'b4', name: 'Manicure/Pedicure', icon: 'spa', count: 18, color: '#E91E63' },
-      { id: 'b5', name: 'Bridal Makeup', icon: 'bride', count: 12, color: '#E91E63' },
     ],
     'Pest Control': [
       { id: 'pc1', name: 'Cockroach Control', icon: 'bug-report', count: 20, color: '#795548' },
       { id: 'pc2', name: 'Termite Control', icon: 'bug-report', count: 15, color: '#795548' },
       { id: 'pc3', name: 'Mosquito Control', icon: 'mosquito', count: 18, color: '#795548' },
       { id: 'pc4', name: 'Rodent Control', icon: 'mouse', count: 12, color: '#795548' },
-      { id: 'pc5', name: 'Bed Bug Treatment', icon: 'bed', count: 10, color: '#795548' },
     ],
     'Moving': [
       { id: 'mv1', name: 'House Shifting', icon: 'home', count: 25, color: '#FF9800' },
       { id: 'mv2', name: 'Office Shifting', icon: 'business', count: 15, color: '#FF9800' },
       { id: 'mv3', name: 'Packing Services', icon: 'inventory', count: 20, color: '#FF9800' },
       { id: 'mv4', name: 'Vehicle Transport', icon: 'local-shipping', count: 12, color: '#FF9800' },
-      { id: 'mv5', name: 'Storage Services', icon: 'storage', count: 10, color: '#FF9800' },
     ],
     'Rental House': [
       { id: 'rh1', name: 'Residential Rent', icon: 'apartment', count: 28, color: '#9C27B0' },
@@ -146,11 +192,10 @@ const ServicesScreen = ({ navigation, route }) => {
       { id: 'rh3', name: 'PG & Hostels', icon: 'hotel', count: 32, color: '#9C27B0' },
       { id: 'rh4', name: 'Vacation Rentals', icon: 'beach-access', count: 12, color: '#9C27B0' },
       { id: 'rh5', name: 'Furnished Houses', icon: 'room', count: 18, color: '#9C27B0' },
-      { id: 'rh6', name: 'Shared Apartments', icon: 'people', count: 24, color: '#9C27B0' },
     ],
   };
 
-  // Enhanced sample providers data with 2 professionals for each category
+  // Sample providers data
   const sampleProviders = {
     'Electrician': [
       {
@@ -552,6 +597,23 @@ const ServicesScreen = ({ navigation, route }) => {
     ],
   };
 
+  // Initial animation
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // Handle route params
   useEffect(() => {
     if (route.params?.category) {
       handleCategorySelect(route.params.category);
@@ -574,9 +636,20 @@ const ServicesScreen = ({ navigation, route }) => {
   };
 
   const handleCategorySelect = (category) => {
+    if (!category.isAvailable) {
+      setComingSoonCategory(category);
+      setShowComingSoonModal(true);
+      return;
+    }
+
+    setIsLoading(true);
     setSelectedCategory(category);
     setShowSubCategories(true);
-    setProviders(sampleProviders[category.name] || []);
+    
+    setTimeout(() => {
+      setProviders(sampleProviders[category.name] || []);
+      setIsLoading(false);
+    }, 500);
   };
 
   const handleBackToCategories = () => {
@@ -607,6 +680,123 @@ const ServicesScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleBookNow = (provider) => {
+    if (selectedCategory?.name === 'Rental House') {
+      navigation.navigate('RentalDetails', { property: provider });
+    } else {
+      navigation.navigate('Booking', { provider: provider });
+    }
+  };
+
+  const toggleFilterModal = () => {
+    setShowFilterModal(!showFilterModal);
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const applyFilters = () => {
+    let filtered = [...providers];
+    
+    if (filters.minRating > 0) {
+      filtered = filtered.filter(p => p.rating >= filters.minRating);
+    }
+    if (filters.minPrice) {
+      const min = parseInt(filters.minPrice.replace(/\D/g, ''));
+      filtered = filtered.filter(p => {
+        const price = parseInt(p.price.replace(/\D/g, ''));
+        return price >= min;
+      });
+    }
+    if (filters.maxPrice) {
+      const max = parseInt(filters.maxPrice.replace(/\D/g, ''));
+      filtered = filtered.filter(p => {
+        const price = parseInt(p.price.replace(/\D/g, ''));
+        return price <= max;
+      });
+    }
+    if (filters.distance !== 'any') {
+      const maxDist = parseInt(filters.distance);
+      filtered = filtered.filter(p => {
+        const dist = parseFloat(p.distance);
+        return dist <= maxDist;
+      });
+    }
+    if (filters.availableNow) {
+      filtered = filtered.filter(p => p.available);
+    }
+    if (filters.verifiedOnly) {
+      filtered = filtered.filter(p => p.verified);
+    }
+    
+    if (filters.sortBy === 'rating') {
+      filtered.sort((a, b) => b.rating - a.rating);
+    } else if (filters.sortBy === 'price_low') {
+      filtered.sort((a, b) => {
+        const aPrice = parseInt(a.price.replace(/\D/g, ''));
+        const bPrice = parseInt(b.price.replace(/\D/g, ''));
+        return aPrice - bPrice;
+      });
+    } else if (filters.sortBy === 'price_high') {
+      filtered.sort((a, b) => {
+        const aPrice = parseInt(a.price.replace(/\D/g, ''));
+        const bPrice = parseInt(b.price.replace(/\D/g, ''));
+        return bPrice - aPrice;
+      });
+    }
+    
+    setProviders(filtered);
+    setShowFilterModal(false);
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      minRating: 0,
+      maxPrice: '',
+      minPrice: '',
+      distance: 'any',
+      availableNow: false,
+      verifiedOnly: false,
+      minExperience: 'any',
+      sortBy: 'rating',
+    });
+    setProviders(sampleProviders[selectedCategory?.name] || []);
+    setShowFilterModal(false);
+  };
+
+  // Coming Soon Modal Component
+  const ComingSoonModal = () => (
+    <Modal
+      visible={showComingSoonModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowComingSoonModal(false)}
+    >
+      <View style={styles.comingSoonOverlay}>
+        <View style={styles.comingSoonModal}>
+          <View style={styles.comingSoonIconContainer}>
+            <Ionicons name="construct-outline" size={60} color="#FF6B6B" />
+          </View>
+          <Text style={styles.comingSoonTitle}>Coming Soon!</Text>
+          <Text style={styles.comingSoonText}>
+            We're working hard to bring you the best {comingSoonCategory?.name} services.
+          </Text>
+          <Text style={styles.comingSoonSubtext}>
+            This service will be available in the next update. Stay tuned!
+          </Text>
+          <TouchableOpacity 
+            style={styles.comingSoonButton}
+            onPress={() => setShowComingSoonModal(false)}
+          >
+            <Text style={styles.comingSoonButtonText}>Got it</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Render functions
   const renderCategoryItem = ({ item, index }) => {
     const inputRange = [-1, 0, index * 100, (index + 1) * 100];
     const translateY = fadeAnim.interpolate({
@@ -617,32 +807,43 @@ const ServicesScreen = ({ navigation, route }) => {
     return (
       <Animated.View style={{ transform: [{ translateY }] }}>
         <TouchableOpacity 
-          style={styles.serviceCard}
+          style={[styles.serviceCard, !item.isAvailable && styles.serviceCardDisabled]}
           onPress={() => handleCategorySelect(item)}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
           <View style={[styles.serviceIcon, { backgroundColor: item.color + '10' }]}>
             <Icon name={item.icon} size={32} color={item.color} />
           </View>
           <View style={styles.serviceInfo}>
-            <Text style={styles.serviceName}>{item.name}</Text>
+            <View style={styles.serviceNameContainer}>
+              <Text style={styles.serviceName}>{item.name}</Text>
+              {!item.isAvailable && (
+                <View style={styles.comingSoonBadge}>
+                  <Text style={styles.comingSoonBadgeText}>Soon</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.serviceDesc} numberOfLines={1}>
               {item.description || 'Professional services at your doorstep'}
             </Text>
-            <View style={styles.serviceMeta}>
-              <View style={styles.serviceCountBadge}>
-                <Icon name="people" size={12} color={item.color} />
-                <Text style={[styles.serviceCount, { color: item.color }]}>
-                  {item.providers || Math.floor(Math.random() * 50) + 20}+ providers
-                </Text>
+            {item.isAvailable ? (
+              <View style={styles.serviceMeta}>
+                <View style={styles.serviceCountBadge}>
+                  <Icon name="people" size={12} color={item.color} />
+                  <Text style={[styles.serviceCount, { color: item.color }]}>
+                    {item.providers || Math.floor(Math.random() * 50) + 20}+ providers
+                  </Text>
+                </View>
+                <View style={styles.ratingBadge}>
+                  <Icon name="star" size={12} color="#FFD700" />
+                  <Text style={styles.ratingText}>{item.rating || '4.5'}</Text>
+                </View>
               </View>
-              <View style={styles.ratingBadge}>
-                <Icon name="star" size={12} color="#FFD700" />
-                <Text style={styles.ratingText}>{item.rating || '4.5'}</Text>
-              </View>
-            </View>
+            ) : (
+              <Text style={styles.comingSoonTextSmall}>Launching soon</Text>
+            )}
           </View>
-          <Icon name="chevron-right" size={24} color="#ccc" />
+          <Icon name="chevron-right" size={24} color={item.isAvailable ? "#ccc" : "#ddd"} />
         </TouchableOpacity>
       </Animated.View>
     );
@@ -740,13 +941,175 @@ const ServicesScreen = ({ navigation, route }) => {
     </TouchableOpacity>
   );
 
-  const handleBookNow = (provider) => {
-    if (selectedCategory?.name === 'Rental House') {
-      navigation.navigate('RentalDetails', { property: provider });
-    } else {
-      navigation.navigate('Booking', { provider: provider });
-    }
-  };
+  const renderFilterModal = () => (
+    <Modal
+      visible={showFilterModal}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowFilterModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Filter & Sort</Text>
+            <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+              <Ionicons name="close" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.filterSection}>
+              <Text style={styles.filterLabel}>Sort By</Text>
+              <View style={styles.sortOptions}>
+                {[
+                  { label: 'Rating', value: 'rating', icon: 'star' },
+                  { label: 'Price: Low', value: 'price_low', icon: 'trending-down' },
+                  { label: 'Price: High', value: 'price_high', icon: 'trending-up' },
+                  { label: 'Distance', value: 'distance', icon: 'location-on' },
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.sortOption,
+                      filters.sortBy === option.value && styles.sortOptionActive,
+                    ]}
+                    onPress={() => handleFilterChange('sortBy', option.value)}
+                  >
+                    <Icon 
+                      name={option.icon} 
+                      size={16} 
+                      color={filters.sortBy === option.value ? '#fff' : '#666'} 
+                    />
+                    <Text 
+                      style={[
+                        styles.sortOptionText,
+                        filters.sortBy === option.value && styles.sortOptionTextActive,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterLabel}>Minimum Rating</Text>
+              <View style={styles.ratingOptions}>
+                {[0, 3, 4, 4.5, 4.8].map((rating) => (
+                  <TouchableOpacity
+                    key={rating}
+                    style={[
+                      styles.ratingChip,
+                      filters.minRating === rating && styles.ratingChipActive,
+                    ]}
+                    onPress={() => handleFilterChange('minRating', rating)}
+                  >
+                    {rating === 0 ? (
+                      <Text style={styles.ratingChipText}>Any</Text>
+                    ) : (
+                      <>
+                        <Icon name="star" size={12} color="#FFD700" />
+                        <Text style={styles.ratingChipText}>{rating}+</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterLabel}>Price Range (₹/hr)</Text>
+              <View style={styles.priceInputs}>
+                <TextInput
+                  style={styles.priceInput}
+                  placeholder="Min"
+                  keyboardType="numeric"
+                  value={filters.minPrice}
+                  onChangeText={(val) => handleFilterChange('minPrice', val)}
+                />
+                <Text style={styles.priceSeparator}>to</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  placeholder="Max"
+                  keyboardType="numeric"
+                  value={filters.maxPrice}
+                  onChangeText={(val) => handleFilterChange('maxPrice', val)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterLabel}>Distance</Text>
+              <View style={styles.distanceOptions}>
+                {[
+                  { label: 'Any', value: 'any' },
+                  { label: '1 km', value: '1km' },
+                  { label: '5 km', value: '5km' },
+                  { label: '10 km', value: '10km' },
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.distanceChip,
+                      filters.distance === option.value && styles.distanceChipActive,
+                    ]}
+                    onPress={() => handleFilterChange('distance', option.value)}
+                  >
+                    <Text 
+                      style={[
+                        styles.distanceChipText,
+                        filters.distance === option.value && styles.distanceChipTextActive,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.filterSection}>
+              <TouchableOpacity 
+                style={styles.toggleOption}
+                onPress={() => handleFilterChange('availableNow', !filters.availableNow)}
+              >
+                <View style={styles.toggleRow}>
+                  <Icon name="access-time" size={20} color="#666" />
+                  <Text style={styles.toggleLabel}>Available Now</Text>
+                </View>
+                <View style={[styles.toggleSwitch, filters.availableNow && styles.toggleSwitchActive]}>
+                  <View style={[styles.toggleKnob, filters.availableNow && styles.toggleKnobActive]} />
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.toggleOption}
+                onPress={() => handleFilterChange('verifiedOnly', !filters.verifiedOnly)}
+              >
+                <View style={styles.toggleRow}>
+                  <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                  <Text style={styles.toggleLabel}>Verified Providers Only</Text>
+                </View>
+                <View style={[styles.toggleSwitch, filters.verifiedOnly && styles.toggleSwitchActive]}>
+                  <View style={[styles.toggleKnob, filters.verifiedOnly && styles.toggleKnobActive]} />
+                </View>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
+              <Text style={styles.resetButtonText}>Reset</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
+              <Text style={styles.applyButtonText}>Apply Filters</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   const filteredCategories = searchText
     ? extendedServiceCategories.filter(cat => 
@@ -792,8 +1155,16 @@ const ServicesScreen = ({ navigation, route }) => {
             </Text>
           </View>
           {!showSubCategories && (
-            <TouchableOpacity style={styles.filterButton}>
+            <TouchableOpacity 
+              style={styles.filterButton}
+              onPress={toggleFilterModal}
+            >
               <Ionicons name="options-outline" size={22} color="#FF6B6B" />
+              {(filters.minRating > 0 || filters.verifiedOnly || filters.availableNow) && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>•</Text>
+                </View>
+              )}
             </TouchableOpacity>
           )}
         </View>
@@ -838,68 +1209,84 @@ const ServicesScreen = ({ navigation, route }) => {
           ) : (
             // Subcategories and Providers
             <View>
-              {/* Subcategories Section */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Service Types</Text>
-                <FlatList
-                  data={subCategoriesData[selectedCategory?.name] || []}
-                  renderItem={renderSubCategoryItem}
-                  keyExtractor={(item) => item.id}
-                  scrollEnabled={false}
-                  contentContainerStyle={styles.subCategoryList}
-                />
-              </View>
-
-              {/* Featured Section - Now showing 2 professionals */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>
-                    {selectedCategory?.name === 'Rental House' ? 'Featured Properties' : 'Top Professionals'}
-                  </Text>
-                  <TouchableOpacity onPress={handleViewAllProviders}>
-                    <Text style={styles.viewAllText}>View All</Text>
-                  </TouchableOpacity>
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#FF6B6B" />
+                  <Text style={styles.loadingText}>Loading services...</Text>
                 </View>
+              ) : (
+                <>
+                  {/* Subcategories Section */}
+                  {subCategoriesData[selectedCategory?.name] && (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Service Types</Text>
+                      <FlatList
+                        data={subCategoriesData[selectedCategory?.name]}
+                        renderItem={renderSubCategoryItem}
+                        keyExtractor={(item) => item.id}
+                        scrollEnabled={false}
+                        contentContainerStyle={styles.subCategoryList}
+                      />
+                    </View>
+                  )}
 
-                {filteredProviders.length > 0 ? (
-                  <View style={styles.providersGrid}>
-                    {filteredProviders.slice(0, 2).map((item) => (
-                      <View key={item.id} style={styles.providerGridItem}>
-                        {renderProviderItem({ item })}
+                  {/* Featured Section */}
+                  <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>
+                        {selectedCategory?.name === 'Rental House' ? 'Featured Properties' : 'Top Professionals'}
+                      </Text>
+                      {providers.length > 0 && (
+                        <TouchableOpacity onPress={handleViewAllProviders}>
+                          <Text style={styles.viewAllText}>View All</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {filteredProviders.length > 0 ? (
+                      <View style={styles.providersGrid}>
+                        {filteredProviders.slice(0, 2).map((item) => (
+                          <View key={item.id} style={styles.providerGridItem}>
+                            {renderProviderItem({ item })}
+                          </View>
+                        ))}
                       </View>
-                    ))}
+                    ) : (
+                      <View style={styles.emptyState}>
+                        <Ionicons name="search-outline" size={48} color="#ccc" />
+                        <Text style={styles.emptyStateText}>No results found</Text>
+                        <Text style={styles.emptyStateSubText}>Try different keywords</Text>
+                      </View>
+                    )}
                   </View>
-                ) : (
-                  <View style={styles.emptyState}>
-                    <Ionicons name="search-outline" size={48} color="#ccc" />
-                    <Text style={styles.emptyStateText}>No results found</Text>
-                    <Text style={styles.emptyStateSubText}>Try different keywords</Text>
-                  </View>
-                )}
-              </View>
 
-              {/* Stats Section */}
-              <View style={styles.statsContainer}>
-                <View style={styles.statsCard}>
-                  <Ionicons name="people" size={24} color="#FF6B6B" />
-                  <Text style={styles.statsNumber}>50+</Text>
-                  <Text style={styles.statsLabel}>Active Providers</Text>
-                </View>
-                <View style={styles.statsCard}>
-                  <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                  <Text style={styles.statsNumber}>100%</Text>
-                  <Text style={styles.statsLabel}>Verified</Text>
-                </View>
-                <View style={styles.statsCard}>
-                  <Ionicons name="time" size={24} color="#FF9800" />
-                  <Text style={styles.statsNumber}>24/7</Text>
-                  <Text style={styles.statsLabel}>Support</Text>
-                </View>
-              </View>
+                  {/* Stats Section */}
+                  <View style={styles.statsContainer}>
+                    <View style={styles.statsCard}>
+                      <Ionicons name="people" size={24} color="#FF6B6B" />
+                      <Text style={styles.statsNumber}>{providers.length}+</Text>
+                      <Text style={styles.statsLabel}>Active Providers</Text>
+                    </View>
+                    <View style={styles.statsCard}>
+                      <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                      <Text style={styles.statsNumber}>100%</Text>
+                      <Text style={styles.statsLabel}>Verified</Text>
+                    </View>
+                    <View style={styles.statsCard}>
+                      <Ionicons name="time" size={24} color="#FF9800" />
+                      <Text style={styles.statsNumber}>24/7</Text>
+                      <Text style={styles.statsLabel}>Support</Text>
+                    </View>
+                  </View>
+                </>
+              )}
             </View>
           )}
         </Animated.ScrollView>
       </View>
+      
+      {renderFilterModal()}
+      <ComingSoonModal />
     </>
   );
 };
@@ -950,6 +1337,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF5F5',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    backgroundColor: '#FF6B6B',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   searchWrapper: {
     paddingHorizontal: 20,
@@ -1307,6 +1711,298 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#ccc',
     marginTop: 4,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: height * 0.85,
+    paddingTop: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  filterSection: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  sortOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 20,
+    gap: 6,
+  },
+  sortOptionActive: {
+    backgroundColor: '#FF6B6B',
+  },
+  sortOptionText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  sortOptionTextActive: {
+    color: '#fff',
+  },
+  ratingOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  ratingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 16,
+    gap: 4,
+  },
+  ratingChipActive: {
+    backgroundColor: '#FF6B6B',
+  },
+  ratingChipText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  priceInputs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  priceInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#333',
+  },
+  priceSeparator: {
+    color: '#999',
+    fontSize: 14,
+  },
+  distanceOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  distanceChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 20,
+  },
+  distanceChipActive: {
+    backgroundColor: '#FF6B6B',
+  },
+  distanceChipText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  distanceChipTextActive: {
+    color: '#fff',
+  },
+  toggleOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    color: '#333',
+  },
+  toggleSwitch: {
+    width: 44,
+    height: 24,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 12,
+    justifyContent: 'center',
+    padding: 2,
+  },
+  toggleSwitchActive: {
+    backgroundColor: '#4CAF50',
+  },
+  toggleKnob: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+  },
+  toggleKnobActive: {
+    marginLeft: 20,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    gap: 12,
+  },
+  resetButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
+    alignItems: 'center',
+  },
+  resetButtonText: {
+    color: '#FF6B6B',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  applyButton: {
+    flex: 2,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#FF6B6B',
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  // Coming Soon Styles
+  serviceCardDisabled: {
+    opacity: 0.7,
+    backgroundColor: '#FAFAFA',
+  },
+  serviceNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+  },
+  comingSoonBadge: {
+    backgroundColor: '#FFE0E0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  comingSoonBadgeText: {
+    fontSize: 10,
+    color: '#FF6B6B',
+    fontWeight: '600',
+  },
+  comingSoonTextSmall: {
+    fontSize: 11,
+    color: '#FF6B6B',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  comingSoonOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  comingSoonModal: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
+    width: width * 0.85,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  comingSoonIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#FFF5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  comingSoonTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FF6B6B',
+    marginBottom: 12,
+  },
+  comingSoonText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+  comingSoonSubtext: {
+    fontSize: 13,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  comingSoonButton: {
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 25,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  comingSoonButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
   },
 });
 

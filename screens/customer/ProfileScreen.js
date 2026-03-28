@@ -145,7 +145,7 @@ const ProfileScreen = ({ navigation }) => {
     { 
       icon: 'location-on', 
       label: 'My Addresses', 
-      action: () => navigation.navigate('Addresses') 
+      action: () => navigation.navigate('Addresses')  // This will navigate to Addresses screen
     },
     { 
       icon: 'payment', 
@@ -160,7 +160,7 @@ const ProfileScreen = ({ navigation }) => {
     { 
       icon: 'history', 
       label: 'Booking History', 
-      action: () => navigation.navigate('BookingHistory') 
+      action: () => navigation.navigate('Bookings') 
     },
     { 
       icon: 'help', 
@@ -174,17 +174,6 @@ const ProfileScreen = ({ navigation }) => {
     },
   ];
 
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    return name.charAt(0).toUpperCase();
-  };
-
-  const formatPhoneNumber = (phone) => {
-    if (!phone) return 'Not provided';
-    // Format as +91 XXXXX XXXXX if needed
-    return phone;
-  };
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -195,281 +184,233 @@ const ProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#f8f9fa" 
-        translucent={Platform.OS === 'android'} 
-      />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
       
       <ScrollView 
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            tintColor="#FF6B6B"
-            colors={['#FF6B6B']}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
         {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          {user?.profileImage ? (
-            <Image 
-              source={{ uri: user.profileImage }} 
-              style={styles.avatarImage} 
-            />
-          ) : (
-            <View style={[styles.avatar, { backgroundColor: user?.avatarColor || '#FF6B6B' }]}>
-              <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
-            </View>
-          )}
-          
-          <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
-          <Text style={styles.userEmail}>{user?.email || 'email@example.com'}</Text>
-          <Text style={styles.userMobile}>
-            <Icon name="phone" size={12} color="#999" /> {formatPhoneNumber(user?.mobile)}
-          </Text>
-          
-          {/* Membership Status */}
-          {user?.membership && (
-            <View style={styles.membershipBadge}>
-              <Icon name="stars" size={14} color="#FFD700" />
-              <Text style={styles.membershipText}>{user.membership} Member</Text>
-            </View>
+        <View style={styles.header}>
+          <View style={styles.profileImageContainer}>
+            {user?.profileImage ? (
+              <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
+            ) : (
+              <View style={styles.profileImagePlaceholder}>
+                <Text style={styles.profileInitial}>
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.userName}>{user?.name || 'User'}</Text>
+          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+          {user?.mobile && user.mobile !== 'Not provided' && (
+            <Text style={styles.userMobile}>📞 {user.mobile}</Text>
           )}
         </View>
 
-        {/* Stats Section */}
-        <View style={styles.statsSection}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{user?.totalBookings || 0}</Text>
-            <Text style={styles.statLabel}>Bookings</Text>
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Icon name="assignment" size={24} color="#FF6B6B" />
+            <Text style={styles.statNumber}>12</Text>
+            <Text style={styles.statLabel}>Total Bookings</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{user?.completedBookings || 0}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{user?.rating || 0}</Text>
+          <View style={styles.statCard}>
+            <Icon name="star" size={24} color="#FFD700" />
+            <Text style={styles.statNumber}>4.8</Text>
             <Text style={styles.statLabel}>Rating</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Icon name="location-on" size={24} color="#4CAF50" />
+            <Text style={styles.statNumber}>3</Text>
+            <Text style={styles.statLabel}>Addresses</Text>
           </View>
         </View>
 
         {/* Menu Items */}
-        <View style={styles.menuSection}>
+        <View style={styles.menuContainer}>
           {menuItems.map((item, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.menuItem} 
+            <TouchableOpacity
+              key={index}
+              style={styles.menuItem}
               onPress={item.action}
               activeOpacity={0.7}
             >
-              <View style={styles.menuIcon}>
-                <Icon name={item.icon} size={22} color="#FF6B6B" />
+              <View style={styles.menuLeft}>
+                <Icon name={item.icon} size={24} color="#FF6B6B" />
+                <Text style={styles.menuLabel}>{item.label}</Text>
               </View>
-              <Text style={styles.menuLabel}>{item.label}</Text>
               <Icon name="chevron-right" size={20} color="#ccc" />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity 
-          style={styles.logoutBtn} 
-          onPress={handleLogout}
-          activeOpacity={0.8}
-        >
-          <Icon name="logout" size={20} color="#fff" />
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Icon name="logout" size={20} color="#FF6B6B" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>App Version 1.0.0</Text>
+        <View style={styles.footer}>
+          <Text style={styles.versionText}>Version 1.0.0</Text>
+        </View>
       </ScrollView>
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f8f9fa' 
-  },
-  scrollContent: { 
-    paddingTop: Platform.OS === 'android' ? 45 : 50,
-    paddingBottom: 20,
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F8F9FA',
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 10,
     fontSize: 14,
     color: '#666',
   },
-  profileHeader: { 
-    backgroundColor: '#fff', 
-    padding: 24, 
+  header: {
+    backgroundColor: '#fff',
     alignItems: 'center',
+    paddingVertical: 30,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F0F0F0',
   },
-  avatar: { 
-    width: 100, 
-    height: 100, 
-    borderRadius: 50, 
-    backgroundColor: '#FF6B6B', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+  profileImageContainer: {
+    marginBottom: 15,
   },
-  avatarImage: {
+  profileImage: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginBottom: 16,
-    borderWidth: 3,
-    borderColor: '#FF6B6B',
   },
-  avatarText: { 
-    fontSize: 40, 
-    fontWeight: '700', 
-    color: '#fff' 
-  },
-  userName: { 
-    fontSize: 22, 
-    fontWeight: '700', 
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  userEmail: { 
-    fontSize: 14, 
-    color: '#666', 
-    marginBottom: 4,
-  },
-  userMobile: { 
-    fontSize: 13, 
-    color: '#999',
-    marginTop: 2,
-  },
-  membershipBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF5F5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 12,
-  },
-  membershipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FF6B6B',
-    marginLeft: 6,
-  },
-  statsSection: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    marginTop: 12,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    justifyContent: 'space-around',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statNumber: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#FF6B6B',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#999',
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#f0f0f0',
-  },
-  menuSection: { 
-    backgroundColor: '#fff', 
-    marginTop: 12,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  menuItem: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    padding: 16, 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#f0f0f0',
-  },
-  menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFF5F5',
+  profileImagePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#FF6B6B',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  menuLabel: { 
-    flex: 1, 
-    fontSize: 15, 
-    color: '#333', 
-    fontWeight: '500',
+  profileInitial: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#fff',
   },
-  logoutBtn: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    backgroundColor: '#FF6B6B', 
-    marginHorizontal: 16,
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 3,
+  },
+  userMobile: {
+    fontSize: 14,
+    color: '#999',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    paddingVertical: 15,
+    marginHorizontal: 5,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 8,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 4,
+  },
+  menuContainer: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuLabel: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 12,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF5F5',
+    marginHorizontal: 20,
     marginTop: 20,
     marginBottom: 10,
-    padding: 14, 
+    paddingVertical: 14,
     borderRadius: 12,
-    shadowColor: '#FF6B6B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#FFE0E0',
   },
-  logoutText: { 
-    color: '#fff', 
-    fontSize: 16, 
-    fontWeight: '600', 
-    marginLeft: 8 
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF6B6B',
+    marginLeft: 8,
   },
-  version: { 
-    textAlign: 'center', 
-    color: '#999', 
-    fontSize: 12, 
+  footer: {
+    alignItems: 'center',
     paddingVertical: 20,
+    paddingBottom: 30,
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#999',
   },
 });
 
