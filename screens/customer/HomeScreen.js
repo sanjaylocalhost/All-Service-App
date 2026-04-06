@@ -652,44 +652,49 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </Animated.View>
 
-        {isSearching ? (
-          <SearchResults />
-        ) : (
-          <>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Popular Services</Text>
-              <FlatList
-                data={serviceCategories.slice(0, 8)}
-                keyExtractor={(item) => item.id.toString()}
-                numColumns={4}
-                scrollEnabled={false}
-                columnWrapperStyle={styles.categoryRow}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() =>
-                      navigation.navigate("Services", { category: item })
-                    }
-                  >
-                    <View
-                      style={[
-                        styles.categoryIcon,
-                        { backgroundColor: item.color + "15" },
-                      ]}
-                    >
-                      <Icon name={item.icon} size={28} color={item.color} />
-                    </View>
-                    <Text style={styles.categoryName} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
+       {isSearching ? (
+  <SearchResults />
+) : (
+  <>
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Popular Services</Text>
+      <FlatList
+        data={serviceCategories.slice(0, 8)}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={4}
+        scrollEnabled={false}
+        columnWrapperStyle={styles.categoryRow}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.categoryCard}
+            onPress={() => {
+              // Direct navigation to services screen with the selected category
+              navigation.navigate("Services", { 
+                category: item,
+                categoryId: item.id,
+                categoryName: item.name 
+              });
+            }}
+          >
+            <View
+              style={[
+                styles.categoryIcon,
+                { backgroundColor: item.color + "15" },
+              ]}
+            >
+              <Icon name={item.icon} size={28} color={item.color} />
             </View>
-
-            <FeaturedProviders />
-          </>
+            <Text style={styles.categoryName} numberOfLines={1}>
+              {item.name}
+            </Text>
+          </TouchableOpacity>
         )}
+      />
+    </View>
+
+    <FeaturedProviders />
+  </>
+)}
       </Animated.ScrollView>
       
       <LocationSelectionModal />

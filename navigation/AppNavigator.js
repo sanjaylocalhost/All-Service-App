@@ -6,15 +6,29 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, View } from 'react-native';
 
+// Import all screens
 import HomeScreen from './screens/HomeScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import ServicesScreen from './screens/ServicesScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import AddressesScreen from './screens/AddressesScreen';
 import EditProfileScreen from '../screens/customer/EditProfileScreen';
+import BookingScreen from '../screens/customer/BookingScreen';
+import MyBookingsScreen from '../screens/customer/MyBookingsScreen';
+import BookingDetailsScreen from '../screens/customer/BookingDetailsScreen';
 
-// Import screens (keep your existing imports)
-// ...
+// Import auth screens (make sure these exist)
+import LoginScreen from './screens/auth/LoginScreen';
+import RegisterScreen from './screens/auth/RegisterScreen';
+import OtpVerificationScreen from './screens/auth/OtpVerificationScreen';
+
+// Import other screens
+import ProviderListScreen from './screens/ProviderListScreen';
+import ProviderDetailsScreen from './screens/ProviderDetailsScreen';
+import PaymentScreen from './screens/PaymentScreen';
+import AboutUsScreen from './screens/AboutUsScreen';
+import ContactUsScreen from './screens/ContactUsScreen';
+import ReviewScreen from './screens/ReviewScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -29,6 +43,8 @@ const HomeTabs = () => {
             iconName = 'home';
           } else if (route.name === 'Services') {
             iconName = 'build';
+          } else if (route.name === 'Notifications') {
+            iconName = 'notifications';
           } else if (route.name === 'Bookings') {
             iconName = 'book-online';
           } else if (route.name === 'Profile') {
@@ -54,7 +70,6 @@ const AppNavigator = () => {
   const [userToken, setUserToken] = useState(null);
 
   useEffect(() => {
-    // Check if user is logged in
     const checkAuthState = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
@@ -81,14 +96,14 @@ const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator>
         {userToken ? (
-          // User is logged in
+          // User is logged in - Main App with Tabs
           <Stack.Screen
             name="MainApp"
             component={HomeTabs}
             options={{ headerShown: false }}
           />
         ) : (
-          // User is not logged in
+          // User is not logged in - Auth Screens
           <>
             <Stack.Screen
               name="Login"
@@ -108,70 +123,80 @@ const AppNavigator = () => {
           </>
         )}
 
-        {/* Common screens (accessible to both logged in and non-logged in users) */}
+        {/* Common screens - accessible to both logged in and non-logged in users */}
+        {/* These screens will appear on top of the tab navigator when logged in */}
         <Stack.Screen
           name="ProviderList"
           component={ProviderListScreen}
           options={{ title: 'Service Providers' }}
         />
+        
         <Stack.Screen
           name="ProviderDetails"
           component={ProviderDetailsScreen}
           options={{ title: 'Provider Details' }}
         />
+        
+        {/* Booking Screen - Only ONE declaration */}
         <Stack.Screen
           name="Booking"
           component={BookingScreen}
           options={{ title: 'Book Service' }}
         />
+        
+        <Stack.Screen
+          name="MyBookings"
+          component={MyBookingsScreen}
+          options={{ title: 'My Bookings' }}
+        />
+        
+        <Stack.Screen
+          name="BookingDetails"
+          component={BookingDetailsScreen}
+          options={{ title: 'Booking Details' }}
+        />
+        
         <Stack.Screen
           name="Payment"
           component={PaymentScreen}
           options={{ title: 'Payment' }}
         />
+        
         <Stack.Screen
           name="AboutUs"
           component={AboutUsScreen}
           options={{ title: 'About Us' }}
         />
+        
         <Stack.Screen
           name="ContactUs"
           component={ContactUsScreen}
           options={{ title: 'Contact Us' }}
         />
+        
         <Stack.Screen
           name="Review"
           component={ReviewScreen}
           options={{ title: 'Write Review' }}
         />
-        <Stack.Screen
-          name="Notifications"
-          component={NotificationsScreen}
-          options={{ headerShown: false }}
-        />
-
+        
         <Stack.Screen
           name="Addresses"
           component={AddressesScreen}
-          options={{ headerShown: false }}
+          options={{ title: 'My Addresses' }}
         />
-
- <Stack.Screen
+        
+        <Stack.Screen
           name="EditProfile"
           component={EditProfileScreen}
           options={{
-            headerShown: false,
-            presentation: 'modal', // Optional: makes it slide up on iOS
+            title: 'Edit Profile',
+            presentation: 'modal',
           }}
         />
-
-
       </Stack.Navigator>
-
-
     </NavigationContainer>
   );
 };
 
 export default AppNavigator;
-

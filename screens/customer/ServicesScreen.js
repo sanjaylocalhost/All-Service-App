@@ -638,7 +638,7 @@ const ServicesScreen = ({ navigation, route }) => {
   const handleCategorySelect = (category) => {
     if (!category.isAvailable) {
       setComingSoonCategory(category);
-      setShowComingSoonModal(true);
+      setShowComingSoonModal(false);
       return;
     }
 
@@ -680,13 +680,14 @@ const ServicesScreen = ({ navigation, route }) => {
     }
   };
 
-  const handleBookNow = (provider) => {
-    if (selectedCategory?.name === 'Rental House') {
-      navigation.navigate('RentalDetails', { property: provider });
-    } else {
-      navigation.navigate('Booking', { provider: provider });
-    }
-  };
+const handleBookNow = (provider) => {
+  if (selectedCategory?.name === 'Rental House') {
+    navigation.navigate('RentalDetails', { property: provider });
+  } else {
+    // This will navigate from the tab screen to the stack screen
+    navigation.navigate('Booking', { provider: provider });
+  }
+};
 
   const toggleFilterModal = () => {
     setShowFilterModal(!showFilterModal);
